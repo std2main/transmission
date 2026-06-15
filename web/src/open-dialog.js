@@ -16,21 +16,22 @@ const is_safari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
 const can_use_input_accept = !(is_ios && is_safari);
 
 export class OpenDialog extends EventTarget {
-  constructor(controller, remote, url = '', files = null) {
+  constructor(controller, remote, options = {}) {
     super();
 
     this.controller = controller;
     this.remote = remote;
+    this.mode = options.mode ?? 'standard';
 
-    this.elements = this._create(url);
+    this.elements = this._create(options.url ?? '');
     this.elements.dismiss.addEventListener('click', () => this._onDismiss());
     this.elements.confirm.addEventListener('click', () => this._onConfirm());
     document.body.append(this.elements.root);
-    if (files) {
-      this.elements.file_input.files = files;
+    if (options.files) {
+      this.elements.file_input.files = options.files;
     }
     this._updateFreeSpaceInAddDialog();
-    this.elements.url_input.focus();
+    (this.elements.url_input ?? this.elements.file_input).focus();
   }
 
   close() {
@@ -63,9 +64,10 @@ export class OpenDialog extends EventTarget {
 
   _onConfirm() {
     const { controller, elements, remote } = this;
-    const { file_input, folder_input, start_input, url_input } = elements;
+    const { file_input, folder_input, start_input } = elements;
     const paused = !start_input.checked;
     const destination = folder_input.value.trim();
+    const seed_existing_mode = this.mode === 'seed-existing';
 
     for (const file of file_input.files) {
       const reader = new FileReader();
@@ -84,6 +86,7 @@ export class OpenDialog extends EventTarget {
             download_dir: destination,
             metainfo: contents.slice(Math.max(0, index + key.length)),
             paused,
+            seed_existing_mode,
           },
         };
         remote.sendRequest(o, (response) => {
@@ -103,8 +106,8 @@ export class OpenDialog extends EventTarget {
       reader.readAsDataURL(file);
     }
 
-    let url = url_input.value.trim();
-    if (url.length > 0) {
+    let url = elements.url_input?.value.trim() ?? '';
+    if (!seed_existing_mode && url.length > 0) {
       if (/^[\da-f]{40}$/i.test(url)) {
         url = `magnet:?xt=urn:btih:${url}`;
       }
@@ -116,6 +119,7 @@ export class OpenDialog extends EventTarget {
           download_dir: destination,
           filename: url,
           paused,
+          seed_existing_mode,
         },
       };
       remote.sendRequest(o, (payload) => {
@@ -136,15 +140,27 @@ export class OpenDialog extends EventTarget {
   _create(url) {
     const elements = createDialogContainer();
     const { confirm, root, heading, workarea } = elements;
+    const is_seed_existing_mode = this.mode === 'seed-existing';
 
     root.classList.add('open-torrent');
-    heading.textContent = 'Add Torrents';
-    confirm.textContent = 'Add';
+    heading.textContent = is_seed_existing_mode
+      ? 'Add Existing Data'
+      : 'Add Torrents';
+    confirm.textContent = is_seed_existing_mode ? 'Quick Check & Add' : 'Add';
+
+    if (is_seed_existing_mode) {
+      const summary = document.createElement('p');
+      summary.textContent =
+        'Use this entry when the torrent data already exists locally. Transmission will run a quick check only, stop on any mismatch, and never fall back to a full verify or start downloading.';
+      workarea.append(summary);
+    }
 
     let input_id = makeUUID();
     let label = document.createElement('label');
     label.setAttribute('for', input_id);
-    label.textContent = 'Please select torrent files to add:';
+    label.textContent = is_seed_existing_mode
+      ? 'Please select local .torrent files for existing data:'
+      : 'Please select torrent files to add:';
     workarea.append(label);
 
     let input = document.createElement('input');
@@ -158,18 +174,20 @@ export class OpenDialog extends EventTarget {
     workarea.append(input);
     elements.file_input = input;
 
-    input_id = makeUUID();
-    label = document.createElement('label');
-    label.setAttribute('for', input_id);
-    label.textContent = 'Or enter a URL:';
-    workarea.append(label);
+    if (!is_seed_existing_mode) {
+      input_id = makeUUID();
+      label = document.createElement('label');
+      label.setAttribute('for', input_id);
+      label.textContent = 'Or enter a URL:';
+      workarea.append(label);
 
-    input = document.createElement('input');
-    input.type = 'url';
-    input.id = input_id;
-    input.value = url;
-    workarea.append(input);
-    elements.url_input = input;
+      input = document.createElement('input');
+      input.type = 'url';
+      input.id = input_id;
+      input.value = url;
+      workarea.append(input);
+      elements.url_input = input;
+    }
 
     input_id = makeUUID();
     label = document.createElement('label');
@@ -205,7 +223,9 @@ export class OpenDialog extends EventTarget {
     label = document.createElement('label');
     label.id = 'auto-start-label';
     label.setAttribute('for', check.id);
-    label.textContent = 'Start when added';
+    label.textContent = is_seed_existing_mode
+      ? 'Start seeding when quick check passes'
+      : 'Start when added';
     checkarea.append(label);
 
     return elements;

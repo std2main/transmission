@@ -49,6 +49,7 @@ export class Transmission extends EventTarget {
 
     for (const [selector, name] of [
       ['#toolbar-open', 'open'],
+      ['#toolbar-seed', 'open-seed'],
       ['#toolbar-delete', 'delete'],
       ['#toolbar-start', 'start'],
       ['#toolbar-pause', 'pause'],
@@ -143,6 +144,11 @@ export class Transmission extends EventTarget {
           break;
         case 'open-torrent':
           this.setCurrentPopup(new OpenDialog(this, this.remote));
+          break;
+        case 'open-seed-torrent':
+          this.setCurrentPopup(
+            new OpenDialog(this, this.remote, { mode: 'seed-existing' }),
+          );
           break;
         case 'pause-all-torrents':
           this._stopTorrents(this._getAllTorrents());
@@ -346,7 +352,9 @@ export class Transmission extends EventTarget {
         'addtorrent',
       );
       if (addTorrent) {
-        this.setCurrentPopup(new OpenDialog(this, this.remote, addTorrent));
+        this.setCurrentPopup(
+          new OpenDialog(this, this.remote, { url: addTorrent }),
+        );
         const newUrl = new URL(globalThis.location);
         newUrl.search = '';
         globalThis.history.pushState('', '', newUrl.toString());
@@ -776,7 +784,7 @@ export class Transmission extends EventTarget {
     const { files } = event_.dataTransfer;
 
     if (files.length > 0) {
-      this.setCurrentPopup(new OpenDialog(this, this.remote, '', files));
+      this.setCurrentPopup(new OpenDialog(this, this.remote, { files }));
     }
     event_.preventDefault();
     return false;

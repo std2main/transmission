@@ -20,6 +20,10 @@ export class ActionManager extends EventTarget {
       'move-down': { enabled: false, text: 'Down' },
       'move-top': { enabled: false, text: 'Top' },
       'move-up': { enabled: false, text: 'Up' },
+      'open-seed-torrent': {
+        enabled: true,
+        text: 'Add existing data…',
+      },
       'open-torrent': {
         enabled: true,
         shortcut: 'O',

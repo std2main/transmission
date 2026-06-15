@@ -250,6 +250,17 @@ export const icon = Object.freeze({
       ['line', { x1: 9, x2: 15, y1: 14, y2: 14 }],
     );
   },
+  'open-seed': () => {
+    return renderIcon(
+      [
+        'path',
+        {
+          d: 'M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z',
+        },
+      ],
+      ['path', { d: 'M8 14l2.5 2.5L16 11', 'stroke-linecap': 'round' }],
+    );
+  },
   overflow: () => {
     return renderIcon(
       ['line', { x1: 3, x2: 21, y1: 12, y2: 12 }],
