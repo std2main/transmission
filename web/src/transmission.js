@@ -17,6 +17,7 @@ import { RenameDialog } from './rename-dialog.js';
 import { LabelsDialog } from './labels-dialog.js';
 import { ShortcutsDialog } from './shortcuts-dialog.js';
 import { StatisticsDialog } from './statistics-dialog.js';
+import { QBittorrentMigrationDialog } from './qbittorrent-migration-dialog.js';
 import { Torrent } from './torrent.js';
 import {
   TorrentRow,
@@ -50,6 +51,7 @@ export class Transmission extends EventTarget {
     for (const [selector, name] of [
       ['#toolbar-open', 'open'],
       ['#toolbar-seed', 'open-seed'],
+      ['#toolbar-qb-migration', 'qb-migration'],
       ['#toolbar-delete', 'delete'],
       ['#toolbar-start', 'start'],
       ['#toolbar-pause', 'pause'],
@@ -202,6 +204,12 @@ export class Transmission extends EventTarget {
           break;
         case 'show-preferences-dialog':
           this.setCurrentPopup(new PrefsDialog(this, this.remote), 0);
+          break;
+        case 'show-qbittorrent-migration-dialog':
+          this.setCurrentPopup(
+            new QBittorrentMigrationDialog(this, this.remote),
+            0,
+          );
           break;
         case 'show-shortcuts-dialog':
           this.setCurrentPopup(new ShortcutsDialog(this.action_manager));

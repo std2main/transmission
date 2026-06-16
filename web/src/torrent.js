@@ -154,7 +154,7 @@ export class Torrent extends EventTarget {
     return this.fields.file_count;
   }
   getHashString() {
-    return this.fields.hash_string;
+    return this.fields.hash_string || '';
   }
   getHave() {
     return this.getHaveValid() + this.getHaveUnchecked();
@@ -594,6 +594,7 @@ Torrent.Fields = {};
 Torrent.Fields.Metadata = [
   'added_date',
   'file_count',
+  'hash_string',
   'name',
   'primary_mime_type',
   'total_size',
