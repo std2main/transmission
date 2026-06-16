@@ -73,6 +73,10 @@ export class ActionManager extends EventTarget {
         shortcut: 'P',
         text: 'Edit preferences',
       },
+      'show-qbittorrent-migration-dialog': {
+        enabled: true,
+        text: 'qBittorrent Migration',
+      },
       'show-rename-dialog': {
         enabled: false,
         shortcut: 'N',

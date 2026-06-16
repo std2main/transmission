@@ -1,0 +1,48 @@
+server {
+    listen 80;
+    server_name localhost;
+
+    # Serve the Transmission Web UI assets
+    location /transmission/web/ {
+        alias /usr/share/nginx/html/;
+        index index.html;
+    }
+
+    # Redirect root to /transmission/web/
+    location = / {
+        return 301 /transmission/web/;
+    }
+
+    location = /transmission {
+        return 301 /transmission/web/;
+    }
+
+    location = /transmission/ {
+        return 301 /transmission/web/;
+    }
+
+    # Reverse proxy /transmission/rpc to the actual backend
+    location /transmission/rpc {
+        proxy_pass ${BACKEND_URL}/transmission/rpc;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        
+        # Handle CSRF 409 session header copying
+        proxy_pass_header X-Transmission-Session-Id;
+    }
+
+    # Reverse proxy /qb-api/ to the qBittorrent client
+    location /qb-api/ {
+        proxy_pass ${QBITTORRENT_URL}/;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        # Bypass qBittorrent CSRF/Host verification by matching headers to the target
+        proxy_set_header Origin ${QBITTORRENT_URL};
+        proxy_set_header Referer ${QBITTORRENT_URL}/;
+    }
+}
+

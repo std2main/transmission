@@ -274,6 +274,18 @@ export const icon = Object.freeze({
       ['rect', { height: 16, width: 4, x: 14, y: 4 }],
     );
   },
+  'qb-migration': () => {
+    return renderIcon(
+      [
+        'path',
+        {
+          d: 'M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z',
+        },
+      ],
+      ['line', { x1: 8, x2: 16, y1: 14, y2: 14 }],
+      ['polyline', { points: '13 11 16 14 13 17' }],
+    );
+  },
   speedDown: () => {
     return renderIcon(['polyline', { points: '6 9 12 15 18 9' }]);
   },
