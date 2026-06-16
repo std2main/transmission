@@ -433,6 +433,60 @@ TEST_F(SettingsTest, canSaveVerify)
     EXPECT_EQ("full"sv, *val);
 }
 
+TEST_F(SettingsTest, canLoadQuickVerifyEnabled)
+{
+    static auto constexpr Key = TR_KEY_torrent_quick_verify_enabled;
+
+    auto settings = std::make_unique<tr_session::Settings>();
+    ASSERT_FALSE(settings->torrent_quick_verify_enabled);
+
+    auto map = tr_variant::Map{ 1U };
+    map.try_emplace(Key, true);
+    settings->load(tr_variant{ std::move(map) });
+    EXPECT_TRUE(settings->torrent_quick_verify_enabled);
+}
+
+TEST_F(SettingsTest, canSaveQuickVerifyEnabled)
+{
+    static auto constexpr Key = TR_KEY_torrent_quick_verify_enabled;
+
+    auto settings = tr_session::Settings{};
+    ASSERT_FALSE(settings.torrent_quick_verify_enabled);
+
+    settings.torrent_quick_verify_enabled = true;
+    auto const map = settings.save();
+    auto const val = map.value_if<bool>(Key);
+    ASSERT_TRUE(val);
+    EXPECT_TRUE(*val);
+}
+
+TEST_F(SettingsTest, canLoadQuickVerifyFallbackEnabled)
+{
+    static auto constexpr Key = TR_KEY_torrent_quick_verify_fallback_enabled;
+
+    auto settings = std::make_unique<tr_session::Settings>();
+    ASSERT_FALSE(settings->torrent_quick_verify_fallback_enabled);
+
+    auto map = tr_variant::Map{ 1U };
+    map.try_emplace(Key, true);
+    settings->load(tr_variant{ std::move(map) });
+    EXPECT_TRUE(settings->torrent_quick_verify_fallback_enabled);
+}
+
+TEST_F(SettingsTest, canSaveQuickVerifyFallbackEnabled)
+{
+    static auto constexpr Key = TR_KEY_torrent_quick_verify_fallback_enabled;
+
+    auto settings = tr_session::Settings{};
+    ASSERT_FALSE(settings.torrent_quick_verify_fallback_enabled);
+
+    settings.torrent_quick_verify_fallback_enabled = true;
+    auto const map = settings.save();
+    auto const val = map.value_if<bool>(Key);
+    ASSERT_TRUE(val);
+    EXPECT_TRUE(*val);
+}
+
 TEST_F(SettingsTest, canLoadPreferredTransport)
 {
     static auto constexpr Key = TR_KEY_preferred_transports;

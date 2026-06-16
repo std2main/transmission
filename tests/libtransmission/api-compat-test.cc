@@ -655,6 +655,8 @@ constexpr std::string_view LegacySettingsJson = R"json({
         "transmission torrent downloaded"
     ],
     "torrent-complete-sound-enabled": true,
+    "torrent-quick-verify-enabled": false,
+    "torrent-quick-verify-fallback-enabled": false,
     "trash-original-torrent-files": false,
     "upload-slots-per-torrent": 8,
     "utp-enabled": true,
@@ -757,6 +759,8 @@ constexpr std::string_view CurrentSettingsJson = R"json({
         "transmission torrent downloaded"
     ],
     "torrent_complete_sound_enabled": true,
+    "torrent_quick_verify_enabled": false,
+    "torrent_quick_verify_fallback_enabled": false,
     "trash_original_torrent_files": false,
     "upload_slots_per_torrent": 8,
     "utp_enabled": true,

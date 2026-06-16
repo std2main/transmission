@@ -444,6 +444,8 @@ public:
         bool speed_limit_up_enabled = false;
         bool tcp_enabled = true;
         bool torrent_complete_verify_enabled = false;
+        bool torrent_quick_verify_enabled = false;
+        bool torrent_quick_verify_fallback_enabled = false;
         bool utp_enabled = true;
         double ratio_limit = 2.0;
         size_t cache_size_mbytes = 4U;
@@ -546,6 +548,8 @@ public:
             Field<&Settings::tcp_enabled>{ TR_KEY_tcp_enabled },
             Field<&Settings::torrent_added_verify_mode>{ TR_KEY_torrent_added_verify_mode },
             Field<&Settings::torrent_complete_verify_enabled>{ TR_KEY_torrent_complete_verify_enabled },
+            Field<&Settings::torrent_quick_verify_enabled>{ TR_KEY_torrent_quick_verify_enabled },
+            Field<&Settings::torrent_quick_verify_fallback_enabled>{ TR_KEY_torrent_quick_verify_fallback_enabled },
             Field<&Settings::should_delete_source_torrents>{ TR_KEY_trash_original_torrent_files },
             Field<&Settings::umask>{ TR_KEY_umask },
             Field<&Settings::upload_slots_per_torrent>{ TR_KEY_upload_slots_per_torrent },
@@ -990,6 +994,16 @@ public:
     [[nodiscard]] constexpr auto shouldPauseAddedTorrents() const noexcept
     {
         return !settings_.should_start_added_torrents;
+    }
+
+    [[nodiscard]] constexpr auto shouldUseQuickVerify() const noexcept
+    {
+        return settings().torrent_quick_verify_enabled;
+    }
+
+    [[nodiscard]] constexpr auto shouldFallbackFromQuickVerify() const noexcept
+    {
+        return settings().torrent_quick_verify_fallback_enabled;
     }
 
     [[nodiscard]] constexpr auto shouldFullyVerifyAddedTorrents() const noexcept

@@ -159,13 +159,18 @@ struct tr_torrent
 
         [[nodiscard]] tr_torrent_metainfo const& metainfo() const override;
         [[nodiscard]] std::optional<std::string> find_file(tr_file_index_t file_index) const override;
+        [[nodiscard]] bool should_use_quick_verify() const override;
+        [[nodiscard]] bool should_fallback_on_quick_verify_failure() const override;
+        [[nodiscard]] bool has_matching_seed() const override;
 
         void on_verify_queued() override;
-        void on_verify_started() override;
-        void on_piece_checked(tr_piece_index_t piece, bool has_piece) override;
-        void on_verify_done(bool aborted) override;
+        void on_verify_started(tr_verify_worker::Statistics const& stats) override;
+        void on_piece_checked(tr_piece_index_t piece, bool has_piece, bool was_hashed) override;
+        void on_verify_done(bool aborted, tr_verify_worker::Statistics const& stats) override;
 
     private:
+        [[nodiscard]] bool is_same_content_seed(tr_torrent const& candidate) const;
+
         tr_torrent* const tor_;
         std::optional<time_t> time_started_;
     };
@@ -1434,6 +1439,7 @@ private:
     bool finished_seeding_by_idle_ = false;
 
     bool needs_completeness_check_ = true;
+    bool seed_existing_mode_ = false;
 
     bool sequential_download_ = false;
 

@@ -871,7 +871,7 @@ void tr_torrent::on_metainfo_completed()
 
     callScriptIfEnabled(this, TR_SCRIPT_ON_TORRENT_ADDED);
 
-    if (session->shouldFullyVerifyAddedTorrents() || !is_new_torrent_a_seed())
+    if (seed_existing_mode_ || session->shouldFullyVerifyAddedTorrents() || !is_new_torrent_a_seed())
     {
         // Potentially, we are in `tr_torrent::init`,
         // and we don't want any file created before `tr_torrent::start`
@@ -926,6 +926,7 @@ void tr_torrent::init(tr_ctor const& ctor)
     finished_seeding_by_idle_ = false;
 
     set_labels(ctor.labels());
+    seed_existing_mode_ = ctor.seed_existing_mode();
 
     session->addTorrent(this);
 
@@ -1611,6 +1612,62 @@ std::optional<std::string> tr_torrent::VerifyMediator::find_file(tr_file_index_t
     return {};
 }
 
+bool tr_torrent::VerifyMediator::should_use_quick_verify() const
+{
+    return tor_->seed_existing_mode_ || tor_->session->shouldUseQuickVerify();
+}
+
+bool tr_torrent::VerifyMediator::should_fallback_on_quick_verify_failure() const
+{
+    return !tor_->seed_existing_mode_ && tor_->session->shouldFallbackFromQuickVerify();
+}
+
+bool tr_torrent::VerifyMediator::is_same_content_seed(tr_torrent const& candidate) const
+{
+    if (&candidate == tor_ || !candidate.is_seed())
+    {
+        return false;
+    }
+
+    auto const& lhs = tor_->metainfo_;
+    auto const& rhs = candidate.metainfo_;
+    if (lhs.piece_count() != rhs.piece_count() || lhs.file_count() != rhs.file_count() || lhs.total_size() != rhs.total_size())
+    {
+        return false;
+    }
+
+    for (tr_piece_index_t piece = 0, n = lhs.piece_count(); piece < n; ++piece)
+    {
+        if (lhs.piece_hash(piece) != rhs.piece_hash(piece))
+        {
+            return false;
+        }
+    }
+
+    for (tr_file_index_t file = 0, n = lhs.file_count(); file < n; ++file)
+    {
+        if (lhs.file_size(file) != rhs.file_size(file) || lhs.file_subpath(file) != rhs.file_subpath(file))
+        {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+bool tr_torrent::VerifyMediator::has_matching_seed() const
+{
+    for (auto const* const candidate : tor_->session->torrents())
+    {
+        if (candidate != nullptr && is_same_content_seed(*candidate))
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 void tr_torrent::update_file_path(tr_file_index_t file, std::optional<bool> has_file) const
 {
     auto const found = find_file(file);
@@ -1650,15 +1707,29 @@ void tr_torrent::VerifyMediator::on_verify_queued()
     tor_->set_verify_state(VerifyState::Queued);
 }
 
-void tr_torrent::VerifyMediator::on_verify_started()
+void tr_torrent::VerifyMediator::on_verify_started(tr_verify_worker::Statistics const& stats)
 {
-    tr_logAddDebugTor(tor_, "Verifying torrent");
+    if (stats.used_quick_verify)
+    {
+        tr_logAddInfoTor(
+            tor_,
+            fmt::format(
+                "Quick verify started: adaptive piece sampling{}",
+                stats.used_matching_seed_shortcut ? ", matching seed shortcut active" : ", with full small-file coverage"));
+    }
+    else
+    {
+        tr_logAddDebugTor(tor_, "Verifying torrent");
+    }
+
     time_started_ = tr_time();
     tor_->set_verify_state(VerifyState::Active);
 }
 
-void tr_torrent::VerifyMediator::on_piece_checked(tr_piece_index_t const piece, bool const has_piece)
+void tr_torrent::VerifyMediator::on_piece_checked(tr_piece_index_t const piece, bool const has_piece, bool const was_hashed)
 {
+    static_cast<void>(was_hashed);
+
     if (auto const had_piece = tor_->has_piece(piece); !has_piece || !had_piece)
     {
         tor_->set_has_piece(piece, has_piece);
@@ -1671,7 +1742,7 @@ void tr_torrent::VerifyMediator::on_piece_checked(tr_piece_index_t const piece, 
 }
 
 // (usually called from tr_verify_worker's thread)
-void tr_torrent::VerifyMediator::on_verify_done(bool const aborted)
+void tr_torrent::VerifyMediator::on_verify_done(bool const aborted, tr_verify_worker::Statistics const& stats)
 {
     if (time_started_.has_value())
     {
@@ -1684,6 +1755,47 @@ void tr_torrent::VerifyMediator::on_verify_done(bool const aborted)
                 duration_secs,
                 total_size,
                 total_size / (1 + duration_secs)));
+    }
+
+    if (stats.used_quick_verify)
+    {
+        if (stats.fell_back_to_full_verify)
+        {
+            tr_logAddInfoTor(
+                tor_,
+                fmt::format(
+                    "Quick verify sampled {} / {} pieces (skipped {}, read {} bytes), found a mismatch, and fell back to a full verify that hashed {} pieces and read {} bytes",
+                    stats.sampled_pieces_hashed,
+                    stats.piece_count,
+                    stats.sampled_pieces_skipped,
+                    stats.sampled_bytes_read,
+                    stats.pieces_hashed,
+                    stats.bytes_read));
+        }
+        else if (stats.sampled_pieces_hashed != 0U && stats.pieces_hashed == stats.sampled_pieces_hashed && !tor_->has_all())
+        {
+            tr_logAddInfoTor(
+                tor_,
+                fmt::format(
+                    "Quick verify found a mismatch in sampled data and stopped without full fallback: hashed {} / {} pieces, "
+                    "skipped {}, read {} bytes",
+                    stats.pieces_hashed,
+                    stats.piece_count,
+                    stats.pieces_skipped,
+                    stats.bytes_read));
+        }
+        else
+        {
+            tr_logAddInfoTor(
+                tor_,
+                fmt::format(
+                    "Quick verify finished: hashed {} / {} pieces, skipped {}, read {} bytes{}",
+                    stats.pieces_hashed,
+                    stats.piece_count,
+                    stats.pieces_skipped,
+                    stats.bytes_read,
+                    stats.used_matching_seed_shortcut ? ", matching seed shortcut active" : ""));
+        }
     }
 
     tor_->set_verify_state(VerifyState::None);
@@ -1707,6 +1819,14 @@ void tr_torrent::VerifyMediator::on_verify_done(bool const aborted)
                 }
 
                 tor->recheck_completeness();
+
+                if (tor->seed_existing_mode_ && !tor->has_all())
+                {
+                    tor->start_when_stable_ = false;
+                    tor->error().set_local_error(
+                        _("Quick verify found missing or mismatched local data. Seed-only add stopped without downloading."));
+                    tor->mark_changed();
+                }
 
                 if (tor->verify_done_callback_)
                 {

@@ -386,6 +386,16 @@ protected:
 
     [[nodiscard]] tr_torrent* zeroTorrentInit(ZeroTorrentState state)
     {
+        auto* const ctor = zeroTorrentCtor();
+        createZeroTorrentFiles(ctor, state);
+
+        auto* const tor = createTorrentAndWaitForVerifyDone(ctor);
+        tr_ctorFree(ctor);
+        return tor;
+    }
+
+    [[nodiscard]] tr_ctor* zeroTorrentCtor()
+    {
         // 1048576 files-filled-with-zeroes/1048576
         //    4096 files-filled-with-zeroes/4096
         //     512 files-filled-with-zeroes/512
@@ -409,49 +419,56 @@ protected:
             "SbRhMVL9e9umo/8KT9ZCS1GIQxhJtGExUv1726aj/wpP1kJLOlf5A+Tz30nMBVuNM2hpV3wg/103"
             "OnByaXZhdGVpMGVlZQ==";
 
-        // create the torrent ctor
         auto const benc = tr_base64_decode(BencBase64);
         EXPECT_LT(0U, std::size(benc));
-        auto* ctor = tr_ctorNew(session_);
+        auto* const ctor = tr_ctorNew(session_);
         auto error = tr_error{};
         EXPECT_TRUE(tr_ctorSetMetainfo(ctor, std::data(benc), std::size(benc), &error));
         EXPECT_FALSE(error) << error;
         tr_ctorSetPaused(ctor, TR_FORCE, true);
+        return ctor;
+    }
 
-        // maybe create the files
-        if (state != ZeroTorrentState::NoFiles)
+    void createZeroTorrentFiles(tr_ctor const* const ctor, ZeroTorrentState const state)
+    {
+        if (state == ZeroTorrentState::NoFiles)
         {
-            auto const* const metainfo = tr_ctorGetMetainfo(ctor);
-            for (tr_file_index_t i = 0, n = metainfo->file_count(); i < n; ++i)
-            {
-                auto const base = state == ZeroTorrentState::Partial && tr_sessionIsIncompleteDirEnabled(session_) ?
-                    tr_sessionGetIncompleteDir(session_) :
-                    tr_sessionGetDownloadDir(session_);
-                auto const& subpath = metainfo->file_subpath(i);
-                auto const partial = state == ZeroTorrentState::Partial && i == 0;
-                auto const suffix = std::string_view{ partial ? ".part" : "" };
-                auto const filename = tr_pathbuf{ base, '/', subpath, suffix };
-
-                auto dirname = tr_pathbuf{ filename.sv() };
-                dirname.popdir();
-                tr_sys_dir_create(dirname, TR_SYS_DIR_CREATE_PARENTS, 0700);
-
-                auto fd = tr_sys_file_open(filename, TR_SYS_FILE_WRITE | TR_SYS_FILE_CREATE | TR_SYS_FILE_TRUNCATE, 0600);
-                auto const file_size = metainfo->file_size(i);
-                for (uint64_t j = 0; j < file_size; ++j)
-                {
-                    auto const ch = partial && j < metainfo->piece_size() ? '\1' : '\0';
-                    tr_sys_file_write(fd, &ch, 1, nullptr);
-                }
-
-                tr_sys_file_close(fd);
-                sync();
-            }
+            return;
         }
 
-        auto* const tor = createTorrentAndWaitForVerifyDone(ctor);
-        tr_ctorFree(ctor);
-        return tor;
+        auto const* const metainfo = tr_ctorGetMetainfo(ctor);
+        for (tr_file_index_t i = 0, n = metainfo->file_count(); i < n; ++i)
+        {
+            auto const base = state == ZeroTorrentState::Partial && tr_sessionIsIncompleteDirEnabled(session_) ?
+                tr_sessionGetIncompleteDir(session_) :
+                tr_sessionGetDownloadDir(session_);
+            auto const& subpath = metainfo->file_subpath(i);
+            auto const partial = state == ZeroTorrentState::Partial && i == 0;
+            auto const suffix = std::string_view{ partial ? ".part" : "" };
+            auto const filename = tr_pathbuf{ base, '/', subpath, suffix };
+
+            auto dirname = tr_pathbuf{ filename.sv() };
+            dirname.popdir();
+            tr_sys_dir_create(dirname, TR_SYS_DIR_CREATE_PARENTS, 0700);
+
+            auto fd = tr_sys_file_open(filename, TR_SYS_FILE_WRITE | TR_SYS_FILE_CREATE | TR_SYS_FILE_TRUNCATE, 0600);
+            auto const file_size = metainfo->file_size(i);
+            static auto constexpr BlockSize = uint64_t{ 524288U };
+            auto buf = std::vector<char>(BlockSize);
+            for (uint64_t j = 0; j < file_size;)
+            {
+                auto const piece_0_size = metainfo->piece_size(0U);
+                auto const is_one = partial && j < piece_0_size;
+                auto const n_write = std::min(BlockSize, (is_one ? piece_0_size : file_size) - j);
+                auto const ch = is_one ? '\1' : '\0';
+                std::fill_n(std::begin(buf), n_write, ch);
+                tr_sys_file_write(fd, std::data(buf), n_write, nullptr);
+                j += n_write;
+            }
+
+            tr_sys_file_close(fd);
+            sync();
+        }
     }
 
     [[nodiscard]] tr_torrent* zeroTorrentMagnetInit()

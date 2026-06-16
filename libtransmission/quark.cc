@@ -542,6 +542,7 @@ auto constexpr MyStatic = std::array<std::string_view, TR_N_KEYS>{
     "seedRatioLimit"sv, // rpc
     "seedRatioLimited"sv, // rpc
     "seedRatioMode"sv, // rpc
+    "seed_existing_mode"sv, // rpc
     "seed_idle_limit"sv, // rpc
     "seed_idle_mode"sv, // rpc
     "seed_queue_enabled"sv, // rpc, tr_session::Settings
@@ -639,6 +640,8 @@ auto constexpr MyStatic = std::array<std::string_view, TR_N_KEYS>{
     "torrent-complete-sound-enabled"sv, // gtk app, qt app
     "torrent-duplicate"sv, // rpc
     "torrent-get"sv, // rpc
+    "torrent-quick-verify-enabled"sv, // tr_session::Settings
+    "torrent-quick-verify-fallback-enabled"sv, // tr_session::Settings
     "torrent-reannounce"sv, // rpc
     "torrent-remove"sv, // rpc
     "torrent-rename-path"sv, // rpc
@@ -662,6 +665,8 @@ auto constexpr MyStatic = std::array<std::string_view, TR_N_KEYS>{
     "torrent_duplicate"sv, // rpc
     "torrent_file"sv, // rpc
     "torrent_get"sv, // rpc
+    "torrent_quick_verify_enabled"sv, // tr_session::Settings
+    "torrent_quick_verify_fallback_enabled"sv, // tr_session::Settings
     "torrent_reannounce"sv, // rpc
     "torrent_remove"sv, // rpc
     "torrent_rename_path"sv, // rpc
