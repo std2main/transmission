@@ -542,6 +542,7 @@ auto constexpr MyStatic = std::array<std::string_view, TR_N_KEYS>{
     "seedRatioLimit"sv, // rpc
     "seedRatioLimited"sv, // rpc
     "seedRatioMode"sv, // rpc
+    "seed_existing_mode"sv, // rpc
     "seed_idle_limit"sv, // rpc
     "seed_idle_mode"sv, // rpc
     "seed_queue_enabled"sv, // rpc, tr_session::Settings
@@ -639,6 +640,8 @@ auto constexpr MyStatic = std::array<std::string_view, TR_N_KEYS>{
     "torrent-complete-sound-enabled"sv, // gtk app, qt app
     "torrent-duplicate"sv, // rpc
     "torrent-get"sv, // rpc
+    "torrent-quick-verify-enabled"sv, // tr_session::Settings
+    "torrent-quick-verify-fallback-enabled"sv, // tr_session::Settings
     "torrent-reannounce"sv, // rpc
     "torrent-remove"sv, // rpc
     "torrent-rename-path"sv, // rpc
@@ -648,6 +651,8 @@ auto constexpr MyStatic = std::array<std::string_view, TR_N_KEYS>{
     "torrent-start-now"sv, // rpc
     "torrent-stop"sv, // rpc
     "torrent-verify"sv, // rpc
+    "torrent-verify-log-path"sv,
+    "torrent-verify-quick"sv, // rpc
     "torrentCount"sv, // rpc
     "torrentFile"sv, // rpc
     "torrent_add"sv, // rpc
@@ -662,6 +667,8 @@ auto constexpr MyStatic = std::array<std::string_view, TR_N_KEYS>{
     "torrent_duplicate"sv, // rpc
     "torrent_file"sv, // rpc
     "torrent_get"sv, // rpc
+    "torrent_quick_verify_enabled"sv, // tr_session::Settings
+    "torrent_quick_verify_fallback_enabled"sv, // tr_session::Settings
     "torrent_reannounce"sv, // rpc
     "torrent_remove"sv, // rpc
     "torrent_rename_path"sv, // rpc
@@ -671,6 +678,8 @@ auto constexpr MyStatic = std::array<std::string_view, TR_N_KEYS>{
     "torrent_start_now"sv, // rpc
     "torrent_stop"sv, // rpc
     "torrent_verify"sv, // rpc
+    "torrent_verify_log_path"sv,
+    "torrent_verify_quick"sv, // rpc
     "torrents"sv, // rpc
     "totalSize"sv, // rpc
     "total_size"sv, // BT protocol, rpc
@@ -719,6 +728,12 @@ auto constexpr MyStatic = std::array<std::string_view, TR_N_KEYS>{
     "utp-enabled"sv, // daemon, rpc, tr_session::Settings
     "utp_enabled"sv, // daemon, rpc, tr_session::Settings
     "v"sv, // BEP0010; BT protocol
+    "verify_stats_bytes_read"sv, // rpc
+    "verify_stats_fell_back_to_full_verify"sv, // rpc
+    "verify_stats_pieces_hashed"sv, // rpc
+    "verify_stats_pieces_skipped"sv, // rpc
+    "verify_stats_used_matching_seed_shortcut"sv, // rpc
+    "verify_stats_used_quick_verify"sv, // rpc
     "version"sv, // rpc
     "wanted"sv, // rpc
     "watch-dir"sv, // daemon, gtk app, qt app

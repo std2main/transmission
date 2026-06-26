@@ -32,7 +32,7 @@ struct ApiKey
     tr_quark legacy;
 };
 
-auto constexpr RpcKeys = std::array<ApiKey, 212U>{ {
+auto constexpr RpcKeys = std::array<ApiKey, 213U>{ {
     { TR_KEY_active_torrent_count, TR_KEY_active_torrent_count_camel_APICOMPAT },
     { TR_KEY_activity_date, TR_KEY_activity_date_camel_APICOMPAT },
     { TR_KEY_added_date, TR_KEY_added_date_camel_APICOMPAT },
@@ -246,9 +246,10 @@ auto constexpr RpcKeys = std::array<ApiKey, 212U>{ {
     { TR_KEY_torrent_start_now, TR_KEY_torrent_start_now_kebab_APICOMPAT },
     { TR_KEY_torrent_stop, TR_KEY_torrent_stop_kebab_APICOMPAT },
     { TR_KEY_torrent_verify, TR_KEY_torrent_verify_kebab_APICOMPAT },
+    { TR_KEY_torrent_verify_quick, TR_KEY_torrent_verify_quick_kebab_APICOMPAT },
 } };
 
-auto constexpr SessionKeys = std::array<ApiKey, 139U>{ {
+auto constexpr SessionKeys = std::array<ApiKey, 142U>{ {
     { TR_KEY_activity_date, TR_KEY_activity_date_kebab_APICOMPAT },
     { TR_KEY_added_date, TR_KEY_added_date_kebab_APICOMPAT },
     { TR_KEY_alt_speed_down, TR_KEY_alt_speed_down_kebab_APICOMPAT },
@@ -378,6 +379,9 @@ auto constexpr SessionKeys = std::array<ApiKey, 139U>{ {
     { TR_KEY_torrent_complete_notification_enabled, TR_KEY_torrent_complete_notification_enabled_kebab_APICOMPAT },
     { TR_KEY_torrent_complete_sound_command, TR_KEY_torrent_complete_sound_command_kebab_APICOMPAT },
     { TR_KEY_torrent_complete_sound_enabled, TR_KEY_torrent_complete_sound_enabled_kebab_APICOMPAT },
+    { TR_KEY_torrent_quick_verify_enabled, TR_KEY_torrent_quick_verify_enabled_kebab_APICOMPAT },
+    { TR_KEY_torrent_quick_verify_fallback_enabled, TR_KEY_torrent_quick_verify_fallback_enabled_kebab_APICOMPAT },
+    { TR_KEY_torrent_verify_log_path, TR_KEY_torrent_verify_log_path_kebab_APICOMPAT },
     { TR_KEY_trash_can_enabled, TR_KEY_trash_can_enabled_kebab_APICOMPAT },
     { TR_KEY_trash_original_torrent_files, TR_KEY_trash_original_torrent_files_kebab_APICOMPAT },
     { TR_KEY_upload_slots_per_torrent, TR_KEY_upload_slots_per_torrent_kebab_APICOMPAT },

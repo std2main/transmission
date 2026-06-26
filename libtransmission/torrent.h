@@ -159,13 +159,24 @@ struct tr_torrent
 
         [[nodiscard]] tr_torrent_metainfo const& metainfo() const override;
         [[nodiscard]] std::optional<std::string> find_file(tr_file_index_t file_index) const override;
+        [[nodiscard]] bool should_use_quick_verify() const override;
+        [[nodiscard]] bool should_fallback_on_quick_verify_failure() const override;
+        [[nodiscard]] bool has_matching_seed() const override;
+        [[nodiscard]] uint32_t quick_verify_middle_window_cursor() const override;
+        void advance_quick_verify_middle_window_cursor() override;
 
         void on_verify_queued() override;
-        void on_verify_started() override;
-        void on_piece_checked(tr_piece_index_t piece, bool has_piece) override;
-        void on_verify_done(bool aborted) override;
+        void on_verify_started(tr_verify_worker::Statistics const& stats) override;
+        void on_piece_checked(
+            tr_piece_index_t piece,
+            bool has_piece,
+            bool was_hashed,
+            tr_verify_worker::Statistics const& stats) override;
+        void on_verify_done(bool aborted, tr_verify_worker::Statistics const& stats) override;
 
     private:
+        [[nodiscard]] bool is_same_content_seed(tr_torrent const& candidate) const;
+
         tr_torrent* const tor_;
         std::optional<time_t> time_started_;
     };
@@ -322,6 +333,11 @@ struct tr_torrent
     [[nodiscard]] constexpr auto has_all() const noexcept
     {
         return completion_.has_all();
+    }
+
+    [[nodiscard]] constexpr bool hadQuickVerifyFail() const noexcept
+    {
+        return had_quick_verify_fail;
     }
 
     [[nodiscard]] constexpr auto has_none() const noexcept
@@ -1033,6 +1049,11 @@ struct tr_torrent
 
     tr_torrent_announcer* torrent_announcer = nullptr;
 
+    [[nodiscard]] constexpr auto const& verify_stats() const noexcept
+    {
+        return verify_stats_;
+    }
+
     tr_swarm* swarm = nullptr;
 
     time_t lpdAnnounceAt = 0;
@@ -1057,6 +1078,7 @@ private:
     friend void tr_torrentStop(tr_torrent* tor);
     friend void tr_torrentUseSessionLimits(tr_torrent* tor, bool enabled);
     friend void tr_torrentVerify(tr_torrent* tor);
+    friend void tr_torrentVerifyQuick(tr_torrent* tor);
 
     enum class VerifyState : uint8_t
     {
@@ -1337,6 +1359,7 @@ private:
     void stop_now();
 
     [[nodiscard]] bool is_new_torrent_a_seed();
+    [[nodiscard]] bool is_seed_candidate();
 
     tr_stat stats_ = {};
 
@@ -1407,6 +1430,7 @@ private:
     time_t seconds_seeding_before_current_start_ = 0;
 
     float verify_progress_ = -1.0F;
+    tr_verify_worker::Statistics verify_stats_ = {};
     float seed_ratio_ = 0.0F;
 
     tr_announce_key_t announce_key_ = tr_rand_obj<tr_announce_key_t>();
@@ -1434,6 +1458,12 @@ private:
     bool finished_seeding_by_idle_ = false;
 
     bool needs_completeness_check_ = true;
+    bool seed_existing_mode_ = false; // add-time hint; cleared after the initial verify completes
+    bool had_quick_verify_fail = false;
+    bool force_quick_verify_ = false; // set by tr_torrentVerifyQuick(); cleared in on_verify_done()
+    // Process-local quick-verify rotation cursor; it intentionally resets when
+    // the torrent object is recreated and is not persisted to resume data.
+    uint32_t quick_verify_middle_window_cursor_ = 0;
 
     bool sequential_download_ = false;
 

@@ -194,6 +194,18 @@ public:
 
     // --
 
+    [[nodiscard]] constexpr bool seed_existing_mode() const noexcept
+    {
+        return seed_existing_mode_;
+    }
+
+    constexpr void set_seed_existing_mode(bool const seed_existing_mode) noexcept
+    {
+        seed_existing_mode_ = seed_existing_mode;
+    }
+
+    // --
+
     [[nodiscard]] auto steal_verify_done_callback() noexcept
     {
         auto tmp = tr_torrent::VerifyDoneCallback{};
@@ -262,4 +274,5 @@ private:
     tr_priority_t priority_ = TR_PRI_NORMAL;
 
     bool should_delete_source_file_ = false;
+    bool seed_existing_mode_ = false;
 };

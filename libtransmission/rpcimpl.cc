@@ -180,7 +180,7 @@ namespace
 namespace
 {
 auto constexpr RecentlyActiveSeconds = time_t{ 60 };
-auto constexpr RpcVersion = int64_t{ 19 };
+auto constexpr RpcVersion = int64_t{ 20 };
 auto constexpr RpcVersionMin = int64_t{ 14 };
 
 enum class TrFormat : uint8_t
@@ -442,6 +442,20 @@ void notifyBatchQueueChange(tr_session* session, std::vector<tr_torrent*> const&
     for (auto* tor : getTorrents(session, args_in))
     {
         tr_torrentVerify(tor);
+        session->rpcNotify(TR_RPC_TORRENT_CHANGED, tor);
+    }
+
+    return { JsonRpc::Error::SUCCESS, {} };
+}
+
+[[nodiscard]] std::pair<JsonRpc::Error::Code, std::string> torrentVerifyQuick(
+    tr_session* session,
+    tr_variant::Map const& args_in,
+    tr_variant::Map& /*args_out*/)
+{
+    for (auto* tor : getTorrents(session, args_in))
+    {
+        tr_torrentVerifyQuick(tor);
         session->rpcNotify(TR_RPC_TORRENT_CHANGED, tor);
     }
 
@@ -764,6 +778,12 @@ namespace make_torrent_field_helpers
     case TR_KEY_upload_limited:
     case TR_KEY_upload_ratio:
     case TR_KEY_uploaded_ever:
+    case TR_KEY_verify_stats_bytes_read:
+    case TR_KEY_verify_stats_fell_back_to_full_verify:
+    case TR_KEY_verify_stats_pieces_hashed:
+    case TR_KEY_verify_stats_pieces_skipped:
+    case TR_KEY_verify_stats_used_matching_seed_shortcut:
+    case TR_KEY_verify_stats_used_quick_verify:
     case TR_KEY_wanted:
     case TR_KEY_webseeds:
     case TR_KEY_webseeds_sending_to_us:
@@ -936,6 +956,18 @@ namespace make_torrent_field_helpers
         return st.ratio;
     case TR_KEY_uploaded_ever:
         return st.uploadedEver;
+    case TR_KEY_verify_stats_bytes_read:
+        return tor.verify_stats().bytes_read;
+    case TR_KEY_verify_stats_fell_back_to_full_verify:
+        return tor.verify_stats().fell_back_to_full_verify;
+    case TR_KEY_verify_stats_pieces_hashed:
+        return tor.verify_stats().pieces_hashed;
+    case TR_KEY_verify_stats_pieces_skipped:
+        return tor.verify_stats().pieces_skipped;
+    case TR_KEY_verify_stats_used_matching_seed_shortcut:
+        return tor.verify_stats().used_matching_seed_shortcut;
+    case TR_KEY_verify_stats_used_quick_verify:
+        return tor.verify_stats().used_quick_verify;
     case TR_KEY_wanted:
         return make_file_wanted_vec(tor);
     case TR_KEY_webseeds:
@@ -1778,6 +1810,11 @@ void torrentAdd(tr_session* session, tr_variant::Map const& args_in, tr_rpc_idle
     if (auto const val = args_in.value_if<bool>(TR_KEY_paused))
     {
         ctor.set_paused(TR_FORCE, *val);
+    }
+
+    if (args_in.value_if<bool>(TR_KEY_seed_existing_mode).value_or(false))
+    {
+        ctor.set_seed_existing_mode(true);
     }
 
     if (auto const val = args_in.value_if<int64_t>(TR_KEY_peer_limit); val)
@@ -2777,7 +2814,7 @@ using SessionAccessors = std::pair<SessionGetter, SessionSetter>;
 
 using SyncHandler = std::pair<JsonRpc::Error::Code, std::string> (*)(tr_session*, tr_variant::Map const&, tr_variant::Map&);
 
-auto const sync_handlers = small::max_size_map<tr_quark, std::pair<SyncHandler, bool /*has_side_effects*/>, 20U>{ {
+auto const sync_handlers = small::max_size_map<tr_quark, std::pair<SyncHandler, bool /*has_side_effects*/>, 21U>{ {
     { TR_KEY_free_space, { freeSpace, false } },
     { TR_KEY_group_get, { groupGet, false } },
     { TR_KEY_group_set, { groupSet, true } },
@@ -2798,6 +2835,7 @@ auto const sync_handlers = small::max_size_map<tr_quark, std::pair<SyncHandler, 
     { TR_KEY_torrent_start_now, { torrentStartNow, true } },
     { TR_KEY_torrent_stop, { torrentStop, true } },
     { TR_KEY_torrent_verify, { torrentVerify, true } },
+    { TR_KEY_torrent_verify_quick, { torrentVerifyQuick, true } },
 } };
 
 using AsyncHandler = void (*)(tr_session*, tr_variant::Map const&, tr_rpc_idle_data*);

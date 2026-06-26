@@ -142,6 +142,7 @@ username and password (respectively), separated by a colon.
 | `torrent_start_now`  | tr_torrentStartNow       | start torrent disregarding queue position
 | `torrent_stop`       | tr_torrentStop           | stop torrent
 | `torrent_verify`     | tr_torrentVerify         | verify torrent
+| `torrent_verify_quick` | tr_torrentVerifyQuick  | quick verify torrent
 | `torrent_reannounce` | tr_torrentManualUpdate   | re-announce to trackers now
 
 Request parameters: `ids`, which specifies which torrents to use.
@@ -1096,7 +1097,7 @@ Transmission 4.1.0 (`rpc_version_semver` 6.0.0, `rpc_version`: 18)
 | `session_get` | :bomb: renamed `tolerated` to `allowed` in `encryption`
 | `session_set` | :bomb: renamed `tolerated` to `allowed` in `encryption`
 
-Transmission 4.1.1 (`rpc_version_semver` 6.0.1, `rpc_version`: 19)
+Transmission 4.1.2 (`rpc_version_semver` 6.0.2, `rpc_version`: 20)
 
 | Method | Description
 |:---|:---
