@@ -1,0 +1,26 @@
+services:
+  transmission:
+    image: std2main/transmission-seeder:plus-dev
+    container_name: transmission-quick-check
+    restart: unless-stopped
+    environment:
+      TRANSMISSION_RPC_BIND_ADDRESS: 0.0.0.0
+      TRANSMISSION_RPC_PORT: "9091"
+      TRANSMISSION_RPC_WHITELIST_ENABLED: "false"
+      TRANSMISSION_DOWNLOAD_DIR: /downloads
+      TRANSMISSION_INCOMPLETE_DIR: /downloads/incomplete
+      TRANSMISSION_INCOMPLETE_DIR_ENABLED: "false"
+      TRANSMISSION_WATCH_DIR: /watch
+      TRANSMISSION_WATCH_DIR_ENABLED: "false"
+      TRANSMISSION_QUICK_VERIFY_ENABLED: "true"
+      TRANSMISSION_QUICK_VERIFY_FALLBACK_ENABLED: "false"
+      TRANSMISSION_LOG_LEVEL: "info"
+      TRANSMISSION_LOG_FILE: "/config/transmission.log"
+    ports:
+      - "127.0.0.1:9091:9091"
+      - "51413:51413/tcp"
+      - "51413:51413/udp"
+    volumes:
+      - ./docker-data/config:/config
+      - ./docker-data/downloads:/downloads
+      - ./docker-data/watch:/watch
