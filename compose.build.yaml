@@ -1,0 +1,13 @@
+services:
+  transmission:
+    image: std2main/transmission-seeder:local
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        CMAKE_BUILD_TYPE: Release
+        ENABLE_TESTS: "OFF"
+      cache_from:
+        - type=local,src=.docker-cache/linux_amd64
+      cache_to:
+        - type=local,dest=.docker-cache/linux_amd64,mode=max

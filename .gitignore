@@ -35,3 +35,11 @@ compile_commands.json
 
 # CMake user presets
 CMakeUserPresets.json
+
+.omx
+docker-data/
+.docker-cache/
+
+# Custom test data and temporary directories
+testdata/
+transmission-test-*/

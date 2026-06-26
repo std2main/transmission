@@ -20,6 +20,10 @@ export class ActionManager extends EventTarget {
       'move-down': { enabled: false, text: 'Down' },
       'move-top': { enabled: false, text: 'Top' },
       'move-up': { enabled: false, text: 'Up' },
+      'open-seed-torrent': {
+        enabled: true,
+        text: 'Add existing data…',
+      },
       'open-torrent': {
         enabled: true,
         shortcut: 'O',
@@ -69,6 +73,10 @@ export class ActionManager extends EventTarget {
         shortcut: 'P',
         text: 'Edit preferences',
       },
+      'show-qbittorrent-migration-dialog': {
+        enabled: true,
+        text: 'qBittorrent Migration',
+      },
       'show-rename-dialog': {
         enabled: false,
         shortcut: 'N',
@@ -91,6 +99,10 @@ export class ActionManager extends EventTarget {
         enabled: false,
         shortcut: 'V',
         text: 'Verify local data',
+      },
+      'verify-selected-torrents-quick': {
+        enabled: false,
+        text: 'Quick verify local data',
       },
     });
   }
@@ -204,6 +216,7 @@ export class ActionManager extends EventTarget {
       'show-labels-dialog',
       'show-move-dialog',
       'trash-selected-torrents',
+      'verify-selected-torrents-quick',
       'verify-selected-torrents',
     ]);
 

@@ -544,6 +544,23 @@ constexpr std::string_view LegacyPreferClearRequest = R"json({
     "tag": 6
 })json";
 
+constexpr std::string_view CurrentTorrentVerifyQuickRequest = R"json({
+    "id": 6,
+    "jsonrpc": "2.0",
+    "method": "torrent_verify_quick",
+    "params": {
+        "ids": [1, "recently_active"]
+    }
+})json";
+
+constexpr std::string_view LegacyTorrentVerifyQuickRequest = R"json({
+    "arguments": {
+        "ids": [1, "recently-active"]
+    },
+    "method": "torrent-verify-quick",
+    "tag": 6
+})json";
+
 constexpr std::string_view LegacyStatsJson = R"json({
     "downloaded-bytes": 12,
     "files-added": 34,
@@ -655,6 +672,9 @@ constexpr std::string_view LegacySettingsJson = R"json({
         "transmission torrent downloaded"
     ],
     "torrent-complete-sound-enabled": true,
+    "torrent-quick-verify-enabled": false,
+    "torrent-quick-verify-fallback-enabled": false,
+    "torrent-verify-log-path": "/config/verify.log",
     "trash-original-torrent-files": false,
     "upload-slots-per-torrent": 8,
     "utp-enabled": true,
@@ -757,6 +777,9 @@ constexpr std::string_view CurrentSettingsJson = R"json({
         "transmission torrent downloaded"
     ],
     "torrent_complete_sound_enabled": true,
+    "torrent_quick_verify_enabled": false,
+    "torrent_quick_verify_fallback_enabled": false,
+    "torrent_verify_log_path": "/config/verify.log",
     "trash_original_torrent_files": false,
     "upload_slots_per_torrent": 8,
     "utp_enabled": true,
@@ -1208,7 +1231,7 @@ TEST_F(ApiCompatTest, canConvertRpc)
     using TestCase = std::tuple<std::string_view, std::string_view, Style, std::string_view>;
 
     // clang-format off
-    static auto constexpr TestCases = std::array<TestCase, 74U>{ {
+    static auto constexpr TestCases = std::array<TestCase, 78U>{ {
         { "free_space tr5 -> tr5", BadFreeSpaceRequest, Style::Tr5, BadFreeSpaceRequest },
         { "free_space tr5 -> tr4", BadFreeSpaceRequest, Style::Tr4, BadFreeSpaceRequestLegacy },
         { "free_space tr4 -> tr5", BadFreeSpaceRequestLegacy, Style::Tr5, BadFreeSpaceRequest },
@@ -1283,6 +1306,10 @@ TEST_F(ApiCompatTest, canConvertRpc)
         { "prefer clear request tr5 -> tr4", CurrentPreferClearRequest, Style::Tr4, LegacyPreferClearRequest },
         { "prefer clear request tr4 -> tr5", LegacyPreferClearRequest, Style::Tr5, CurrentPreferClearRequest },
         { "prefer clear request tr5 -> tr4", LegacyPreferClearRequest, Style::Tr4, LegacyPreferClearRequest },
+        { "torrent verify quick request tr5 -> tr5", CurrentTorrentVerifyQuickRequest, Style::Tr5, CurrentTorrentVerifyQuickRequest },
+        { "torrent verify quick request tr5 -> tr4", CurrentTorrentVerifyQuickRequest, Style::Tr4, LegacyTorrentVerifyQuickRequest },
+        { "torrent verify quick request tr4 -> tr5", LegacyTorrentVerifyQuickRequest, Style::Tr5, CurrentTorrentVerifyQuickRequest },
+        { "torrent verify quick request tr5 -> tr4", LegacyTorrentVerifyQuickRequest, Style::Tr4, LegacyTorrentVerifyQuickRequest },
 
         // TODO(ckerr): torrent-get with 'table'
     } };
@@ -1294,7 +1321,11 @@ TEST_F(ApiCompatTest, canConvertRpc)
         auto parsed = serde.parse(src);
         ASSERT_TRUE(parsed.has_value()) << name << ": " << serde.error_;
         libtransmission::api_compat::convert(*parsed, tgt_style);
-        EXPECT_EQ(expected, serde.to_string(*parsed)) << name;
+        auto expected_parsed = serde.parse(expected);
+        ASSERT_TRUE(expected_parsed.has_value()) << name << ": " << serde.error_;
+
+        auto compact_serde = tr_variant_serde::json().compact();
+        EXPECT_EQ(compact_serde.to_string(*expected_parsed), compact_serde.to_string(*parsed)) << name;
     }
 }
 

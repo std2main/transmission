@@ -1390,6 +1390,12 @@ void tr_torrentAmountFinished(tr_torrent const* torrent, float* tab, int n_tabs)
  */
 void tr_torrentVerify(tr_torrent* torrent);
 
+/**
+ * Queue a torrent for quick (adaptive sampling) verification.
+ * Resets any prior quick-verify failure flag and forces the quick verify path.
+ */
+void tr_torrentVerifyQuick(tr_torrent* torrent);
+
 bool tr_torrentHasMetadata(tr_torrent const* tor);
 
 /**

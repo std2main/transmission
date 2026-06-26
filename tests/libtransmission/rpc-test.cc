@@ -739,6 +739,45 @@ TEST_F(RpcTest, sessionGet)
     tr_torrentRemove(tor, false, nullptr, nullptr);
 }
 
+TEST_F(RpcTest, torrentVerifyQuick)
+{
+    auto* tor = zeroTorrentInit(ZeroTorrentState::Complete);
+    ASSERT_NE(nullptr, tor);
+
+    auto request_map = tr_variant::Map{ 3U };
+    request_map.try_emplace(TR_KEY_jsonrpc, JsonRpc::Version);
+    request_map.try_emplace(TR_KEY_method, tr_variant::unmanaged_string(TR_KEY_torrent_verify_quick));
+    request_map.try_emplace(TR_KEY_id, 12345);
+
+    auto params = tr_variant::Map{ 1U };
+    auto ids = tr_variant::Vector{};
+    ids.emplace_back(static_cast<int64_t>(tr_torrentId(tor)));
+    params.try_emplace(TR_KEY_ids, std::move(ids));
+    request_map.try_emplace(TR_KEY_params, std::move(params));
+
+    auto request = tr_variant{ std::move(request_map) };
+    auto response = tr_variant{};
+    tr_rpc_request_exec(
+        session_,
+        request,
+        [&response](tr_session* /*session*/, tr_variant&& resp) { response = std::move(resp); });
+
+    auto const* const response_map = response.get_if<tr_variant::Map>();
+    ASSERT_NE(response_map, nullptr);
+    auto const* const result = response_map->find_if<tr_variant::Map>(TR_KEY_result);
+    EXPECT_NE(result, nullptr);
+    auto const error = response_map->find(TR_KEY_error);
+    EXPECT_EQ(error, std::end(*response_map));
+    auto const id = response_map->value_if<int64_t>(TR_KEY_id);
+    ASSERT_TRUE(id);
+    EXPECT_EQ(*id, 12345);
+    EXPECT_TRUE(waitFor([tor]() { return tor->verify_stats().used_quick_verify; }, 5000));
+    EXPECT_TRUE(tor->verify_stats().used_quick_verify);
+    EXPECT_TRUE(tor->has_all());
+
+    tr_torrentRemove(tor, false, nullptr, nullptr);
+}
+
 TEST_F(RpcTest, torrentGet)
 {
     auto* tor = zeroTorrentInit(ZeroTorrentState::NoFiles);

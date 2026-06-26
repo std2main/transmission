@@ -17,6 +17,7 @@ import { RenameDialog } from './rename-dialog.js';
 import { LabelsDialog } from './labels-dialog.js';
 import { ShortcutsDialog } from './shortcuts-dialog.js';
 import { StatisticsDialog } from './statistics-dialog.js';
+import { QBittorrentMigrationDialog } from './qbittorrent-migration-dialog.js';
 import { Torrent } from './torrent.js';
 import {
   TorrentRow,
@@ -49,6 +50,8 @@ export class Transmission extends EventTarget {
 
     for (const [selector, name] of [
       ['#toolbar-open', 'open'],
+      ['#toolbar-seed', 'open-seed'],
+      ['#toolbar-qb-migration', 'qb-migration'],
       ['#toolbar-delete', 'delete'],
       ['#toolbar-start', 'start'],
       ['#toolbar-pause', 'pause'],
@@ -144,6 +147,11 @@ export class Transmission extends EventTarget {
         case 'open-torrent':
           this.setCurrentPopup(new OpenDialog(this, this.remote));
           break;
+        case 'open-seed-torrent':
+          this.setCurrentPopup(
+            new OpenDialog(this, this.remote, { mode: 'seed-existing' }),
+          );
+          break;
         case 'pause-all-torrents':
           this._stopTorrents(this._getAllTorrents());
           break;
@@ -197,6 +205,12 @@ export class Transmission extends EventTarget {
         case 'show-preferences-dialog':
           this.setCurrentPopup(new PrefsDialog(this, this.remote), 0);
           break;
+        case 'show-qbittorrent-migration-dialog':
+          this.setCurrentPopup(
+            new QBittorrentMigrationDialog(this, this.remote),
+            0,
+          );
+          break;
         case 'show-shortcuts-dialog':
           this.setCurrentPopup(new ShortcutsDialog(this.action_manager));
           break;
@@ -223,6 +237,9 @@ export class Transmission extends EventTarget {
           break;
         case 'verify-selected-torrents':
           this._verifyTorrents(this.getSelectedTorrents());
+          break;
+        case 'verify-selected-torrents-quick':
+          this._verifyTorrentsQuick(this.getSelectedTorrents());
           break;
         default:
           console.warn(`unhandled action: ${event_.action}`);
@@ -346,7 +363,9 @@ export class Transmission extends EventTarget {
         'addtorrent',
       );
       if (addTorrent) {
-        this.setCurrentPopup(new OpenDialog(this, this.remote, addTorrent));
+        this.setCurrentPopup(
+          new OpenDialog(this, this.remote, { url: addTorrent }),
+        );
         const newUrl = new URL(globalThis.location);
         newUrl.search = '';
         globalThis.history.pushState('', '', newUrl.toString());
@@ -765,18 +784,23 @@ export class Transmission extends EventTarget {
     const type = event_.dataTransfer.types.findLast((t) =>
       ['text/uri-list', 'text/plain'].includes(t),
     );
-    for (const uri of event_.dataTransfer
-      .getData(type)
-      .split('\n')
-      .map((string) => string.trim())
-      .filter((string) => Transmission._isValidURL(string))) {
-      this.remote.addTorrentByUrl(uri, paused);
+    if (type) {
+      for (const uri of event_.dataTransfer
+        .getData(type)
+        .split('\n')
+        .map((string) => string.trim())
+        .filter(
+          (string) =>
+            Transmission._isValidURL(string) && !string.startsWith('file://'),
+        )) {
+        this.remote.addTorrentByUrl(uri, { paused });
+      }
     }
 
     const { files } = event_.dataTransfer;
 
     if (files.length > 0) {
-      this.setCurrentPopup(new OpenDialog(this, this.remote, '', files));
+      this.setCurrentPopup(new OpenDialog(this, this.remote, { files }));
     }
     event_.preventDefault();
     return false;
@@ -977,6 +1001,14 @@ TODO: fix this when notifications get fixed
   }
   _verifyTorrents(torrents) {
     this.remote.verifyTorrents(
+      Transmission._getTorrentIds(torrents),
+      this.refreshTorrents,
+      this,
+    );
+  }
+
+  _verifyTorrentsQuick(torrents) {
+    this.remote.verifyTorrentsQuick(
       Transmission._getTorrentIds(torrents),
       this.refreshTorrents,
       this,

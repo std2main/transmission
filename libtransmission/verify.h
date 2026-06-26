@@ -27,6 +27,25 @@
 class tr_verify_worker
 {
 public:
+    struct Statistics
+    {
+        bool used_quick_verify = false;
+        bool used_matching_seed_shortcut = false;
+        bool fell_back_to_full_verify = false;
+        tr_piece_index_t piece_count = 0;
+        tr_piece_index_t pieces_hashed = 0;
+        tr_piece_index_t pieces_skipped = 0;
+        tr_piece_index_t sampled_pieces_hashed = 0;
+        tr_piece_index_t sampled_pieces_skipped = 0;
+        tr_piece_index_t quick_verify_progress_piece_count = 0;
+        tr_file_index_t quick_verify_progress_files_done = 0;
+        tr_file_index_t quick_verify_progress_files_total = 0;
+        uint64_t bytes_read = 0;
+        uint64_t sampled_bytes_read = 0;
+        bool metadata_validation_failed = false;
+        std::optional<tr_file_index_t> failed_file_index;
+    };
+
     class Mediator
     {
     public:
@@ -34,11 +53,16 @@ public:
 
         [[nodiscard]] virtual tr_torrent_metainfo const& metainfo() const = 0;
         [[nodiscard]] virtual std::optional<std::string> find_file(tr_file_index_t file_index) const = 0;
+        [[nodiscard]] virtual bool should_use_quick_verify() const = 0;
+        [[nodiscard]] virtual bool should_fallback_on_quick_verify_failure() const = 0;
+        [[nodiscard]] virtual bool has_matching_seed() const = 0;
+        [[nodiscard]] virtual uint32_t quick_verify_middle_window_cursor() const = 0;
+        virtual void advance_quick_verify_middle_window_cursor() = 0;
 
         virtual void on_verify_queued() = 0;
-        virtual void on_verify_started() = 0;
-        virtual void on_piece_checked(tr_piece_index_t piece, bool has_piece) = 0;
-        virtual void on_verify_done(bool aborted) = 0;
+        virtual void on_verify_started(Statistics const& stats) = 0;
+        virtual void on_piece_checked(tr_piece_index_t piece, bool has_piece, bool was_hashed, Statistics const& stats) = 0;
+        virtual void on_verify_done(bool aborted, Statistics const& stats) = 0;
     };
 
     tr_verify_worker() = default;
