@@ -272,6 +272,14 @@ export class Remote {
       context,
     );
   }
+  verifyTorrentsQuick(torrent_ids, callback, context) {
+    this.sendTorrentActionRequests(
+      'torrent_verify_quick',
+      torrent_ids,
+      callback,
+      context,
+    );
+  }
   reannounceTorrents(torrent_ids, callback, context) {
     this.sendTorrentActionRequests(
       'torrent_reannounce',

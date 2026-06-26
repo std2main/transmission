@@ -433,6 +433,7 @@ export class OverflowMenu extends EventTarget {
 
     for (const action_name of [
       'show-preferences-dialog',
+      'show-qbittorrent-migration-dialog',
       'show-shortcuts-dialog',
       'pause-all-torrents',
       'start-all-torrents',

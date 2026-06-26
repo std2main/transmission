@@ -154,7 +154,7 @@ export class Torrent extends EventTarget {
     return this.fields.file_count;
   }
   getHashString() {
-    return this.fields.hash_string;
+    return this.fields.hash_string || '';
   }
   getHave() {
     return this.getHaveValid() + this.getHaveUnchecked();
@@ -215,6 +215,24 @@ export class Torrent extends EventTarget {
   }
   getRecheckProgress() {
     return this.fields.recheck_progress;
+  }
+  getVerifyStatsBytesRead() {
+    return this.fields.verify_stats_bytes_read || 0;
+  }
+  getVerifyStatsFellBackToFullVerify() {
+    return this.fields.verify_stats_fell_back_to_full_verify || false;
+  }
+  getVerifyStatsPiecesHashed() {
+    return this.fields.verify_stats_pieces_hashed || 0;
+  }
+  getVerifyStatsPiecesSkipped() {
+    return this.fields.verify_stats_pieces_skipped || 0;
+  }
+  getVerifyStatsUsedMatchingSeedShortcut() {
+    return this.fields.verify_stats_used_matching_seed_shortcut || false;
+  }
+  getVerifyStatsUsedQuickVerify() {
+    return this.fields.verify_stats_used_quick_verify || false;
   }
   getSeedRatioLimit() {
     return this.fields.seed_ratio_limit;
@@ -594,6 +612,7 @@ Torrent.Fields = {};
 Torrent.Fields.Metadata = [
   'added_date',
   'file_count',
+  'hash_string',
   'name',
   'primary_mime_type',
   'total_size',
@@ -617,6 +636,12 @@ Torrent.Fields.Stats = [
   'rate_download',
   'rate_upload',
   'recheck_progress',
+  'verify_stats_bytes_read',
+  'verify_stats_fell_back_to_full_verify',
+  'verify_stats_pieces_hashed',
+  'verify_stats_pieces_skipped',
+  'verify_stats_used_matching_seed_shortcut',
+  'verify_stats_used_quick_verify',
   'seed_ratio_mode',
   'seed_ratio_limit',
   'size_when_done',

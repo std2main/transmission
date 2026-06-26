@@ -128,11 +128,29 @@ export class TorrentRendererFull {
       ].join(' ');
       setTextContent(peer_details, str);
     } else if (t.isChecking()) {
-      const str = [
-        'Verifying local data (',
-        fmt.percentString(100 * t.getRecheckProgress(), 1),
-        '% tested)',
-      ].join('');
+      let str = '';
+      if (t.getVerifyStatsUsedQuickVerify()) {
+        const hashed = t.getVerifyStatsPiecesHashed();
+        const skipped = t.getVerifyStatsPiecesSkipped();
+        const total = t.getPieceCount();
+        const mode = t.getVerifyStatsUsedMatchingSeedShortcut()
+          ? 'Quick Check (matching seed)'
+          : 'Quick Check';
+        const progressStr = fmt.percentString(100 * t.getRecheckProgress(), 1);
+        if (t.getVerifyStatsFellBackToFullVerify()) {
+          str = `Fell back to full verification (${progressStr}% tested)`;
+        } else {
+          const savings =
+            skipped + hashed > 0 ? (100 * skipped) / (skipped + hashed) : 0;
+          str = `${mode}: ${progressStr}% checked (${hashed} hashed, ${skipped} skipped of ${total} - saving ${savings.toFixed(1)}% reads)`;
+        }
+      } else {
+        str = [
+          'Verifying local data (',
+          fmt.percentString(100 * t.getRecheckProgress(), 1),
+          '% tested)',
+        ].join('');
+      }
       setTextContent(peer_details, str);
     } else {
       setTextContent(peer_details, t.getStateString());
@@ -300,14 +318,24 @@ export class TorrentRendererCompact {
         }
         setTextContent(peer_details, s.join(' '));
       }
-    } else if (t.isSeeding()) {
-      const str = [
-        'Ratio:',
-        fmt.ratioString(t.getUploadRatio()),
-        '-',
-        TorrentRendererHelper.symbol.up,
-        fmt.speedBps(t.getUploadSpeed()),
-      ].join(' ');
+    } else if (t.isChecking()) {
+      let str = '';
+      if (t.getVerifyStatsUsedQuickVerify()) {
+        const mode = t.getVerifyStatsUsedMatchingSeedShortcut()
+          ? 'Quick Check (seed)'
+          : 'Quick Check';
+        if (t.getVerifyStatsFellBackToFullVerify()) {
+          str = `Fell back to full verify`;
+        } else {
+          const hashed = t.getVerifyStatsPiecesHashed();
+          const skipped = t.getVerifyStatsPiecesSkipped();
+          const savings =
+            skipped + hashed > 0 ? (100 * skipped) / (skipped + hashed) : 0;
+          str = `${mode} (saving ${savings.toFixed(0)}% reads)`;
+        }
+      } else {
+        str = 'Verifying local data';
+      }
       setTextContent(peer_details, str);
     } else {
       setTextContent(peer_details, t.getStateString());
